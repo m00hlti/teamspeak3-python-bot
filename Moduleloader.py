@@ -41,12 +41,15 @@ def load_modules(bot, config):
 
     for plugin in plugins.items():
         try:
-            plugin_modules[plugin[0]] = importlib.import_module("modules."+plugin[1],
+            plugin_modules[plugin[1]["name"]] = importlib.import_module("modules."+plugin[0],
                                                                 package="modules")
-            plugin_modules[plugin[0]].pluginname = plugin[0]
-            logger.info("Loaded module " + plugin[0])
+            plugin_modules[plugin[1]["name"]].pluginname = plugin[1]["name"]
+            plugin_modules[plugin[1]["name"]].config = plugin[1]            
+            logger.info("Loaded module " + plugin[1]["name"])
+            
         except BaseException:
-            logger.exception("While loading plugin " + str(plugin[0]) + " from modules."+plugin[1])
+            logger.exception("While loading plugin " + str(plugin[1]["name"]) + " from modules." + plugin[0])
+            
     # Call all registered setup functions
     for setup_func in setups:
         try:
@@ -92,8 +95,9 @@ def channel_event(event_type, *channel_ids):
     :type event_types: TS3Event
     """
     def register_observer(function):
-        for channel_id in channel_ids:
-            event_handler.add_channel_observer(function, channel_id, event_type)
+        if len(channel_ids) > 0:
+            for channel_id in channel_ids:
+                event_handler.add_channel_observer(function, event_type)
         return function
     return register_observer
 
