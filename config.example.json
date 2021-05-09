@@ -23,6 +23,7 @@
         "communityservice":
         {
             "name": "Commservice",
+            "botshome": 1337,
             "channel_config" : {
                 "1066": {
                     "cname":"⮚ Channel {0}",
