@@ -5,6 +5,8 @@ import Bot
 import Moduleloader
 from Moduleloader import *
 
+import parse
+
 channel_config = {}
 channels_configured = []
 
@@ -36,12 +38,17 @@ def on_channel_join_event(evt):
 
     # don't do it on your own, you dumbass :D
     if evt.client_id == int(bot.ts3conn.whoami()["client_id"]):
-        logger.info("Don't do it, because it's me.")
+        #logger.info("Don't do it, because it's me.")
         return
 
     if evt.target_channel_id in channels_configured:
+
         # Gather all information first:
         curr_ch_cfg = channel_config[evt.target_channel_id]
+
+        # Get the highest channel
+        last_cid,last_chnum  = _check_subchans_max_num(evt.target_channel_id)
+        curr_ch_cfg["currnum"] = last_chnum +1
 
         # At least we need a name here.
         if "cname" in curr_ch_cfg:
@@ -50,7 +57,7 @@ def on_channel_join_event(evt):
             logger.warn("No channel name given for channel: " + str(evt.target_channel_id))
             return
        
-        curr_ch_cfg["currnum"] += 1
+        #curr_ch_cfg["currnum"] += 1
 
         # Create Channel, move user to it, leave and join homechannel
         createAsSub = True
@@ -70,7 +77,7 @@ def on_channel_join_event(evt):
                 flags.append("channel_flag_maxclients_unlimited=0")
             response = _channel_create(flags)
             cid = response["cid"]
-            response = _channel_move(["cid=" + cid, "cpid=" + str(cpid)])
+            response = _channel_move(["cid=" + cid, "cpid=" + str(cpid), "order=" + str(last_cid)])
 
         else:
             response = _get_channel_info(evt.target_channel_id)
@@ -93,6 +100,24 @@ def on_channel_join_event(evt):
 
 def on_channel_message_event(_sender, **kw):
     pass
+
+def _check_subchans_max_num(cpid):
+    maxval = 0
+    maxcid = 0
+    parseformat = channel_config[cpid]["cname"]
+
+
+    channellist = ts3conn.channellist()
+    #filtered_list = []
+    str_cpid = str(cpid)
+    for ch in channellist:
+        if ch["pid"] == str_cpid:
+            tmp = parse.parse(parseformat, ch["channel_name"])
+            if tmp is not None and int(tmp[0]) > maxval:
+                maxval = int(tmp[0])
+                maxcid = ch["cid"]
+
+    return maxcid,maxval
 
 def _bot_go_home():
     """
